@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learn Numbers</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .number-display {
+            text-align: center;
+            font-size: 120px;
+            color: #764ba2;
+            font-weight: bold;
+            margin: 20px 0;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.2);
+        }
+        
+        .word-display {
+            text-align: center;
+            font-size: 40px;
+            color: #667eea;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+        
+        .canvas-container {
+            text-align: center;
+            margin: 30px 0;
+            position: relative;
+        }
+        
+        canvas {
+            border: 4px dashed #667eea;
+            border-radius: 15px;
+            background: #f8f9ff;
+            cursor: crosshair;
+            touch-action: none;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            font-size: 20px;
+            font-weight: bold;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+        }
+        
+        .prev-btn {
+            background: #ff6b6b;
+            color: white;
+        }
+        
+        .prev-btn:hover {
+            background: #ff5252;
+            transform: scale(1.05);
+        }
+        
+        .next-btn {
+            background: #51cf66;
+            color: white;
+        }
+        
+        .next-btn:hover {
+            background: #40c057;
+            transform: scale(1.05);
+        }
+        
+        .clear-btn {
+            background: #ffd43b;
+            color: #333;
+        }
+        
+        .clear-btn:hover {
+            background: #fcc419;
+            transform: scale(1.05);
+        }
+        
+        .thumbs-up {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 100px;
+            animation: popIn 0.5s ease-out;
+            pointer-events: none;
+        }
+        
+        @keyframes popIn {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        
+        .progress {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 18px;
+            color: #667eea;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Learn Numbers!</h1>
+        <div class="number-display" id="numberDisplay">1</div>
+        <div class="word-display" id="wordDisplay">one</div>
+        <div class="canvas-container">
+            <canvas id="canvas" width="500" height="150"></canvas>
+        </div>
+        <div class="progress" id="progress">Trace the letters above!</div>
+        <div class="controls">
+            <button class="prev-btn" onclick="prevNumber()">⬅️ Previous</button>
+            <button class="clear-btn" onclick="clearCanvas()">🔄 Clear</button>
+            <button class="next-btn" onclick="nextNumber()">Next ➡️</button>
+        </div>
+    </div>
+
+    <script>
+        const numbers = {
+            1: 'one',
+            2: 'two',
+            3: 'three',
+            4: 'four',
+            5: 'five',
+            6: 'six',
+            7: 'seven',
+            8: 'eight',
+            9: 'nine',
+            10: 'ten'
+        };
+        
+        let currentNumber = 1;
+        let canvas = document.getElementById('canvas');
+        let ctx = canvas.getContext('2d');
+        let drawing = false;
+        let lettersCovered = new Set();
+        let hasCompletedTracing = false;
+        let isSpeaking = false;
+        
+        function speak(text, callback) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.8;
+            utterance.pitch = 1.2;
+            if (callback) {
+                utterance.onend = callback;
+            }
+            speechSynthesis.speak(utterance);
+        }
+        
+        function drawDottedText() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = 'bold 80px Comic Sans MS';
+            ctx.textBaseline = 'middle';
+            
+            const word = numbers[currentNumber];
+            const letterSpacing = 30;
+            const letterWidth = 50; // approximate width per letter
+            const totalWidth = (word.length * letterWidth) + ((word.length - 1) * letterSpacing);
+            const startX = (canvas.width - totalWidth) / 2;
+            
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = '#667eea';
+            ctx.lineWidth = 3;
+            
+            for (let i = 0; i < word.length; i++) {
+                const x = startX + (i * (letterWidth + letterSpacing)) + letterWidth / 2;
+                ctx.textAlign = 'center';
+                ctx.strokeText(word[i], x, canvas.height / 2);
+            }
+            ctx.setLineDash([]);
+        }
+        
+        function updateDisplay() {
+            document.getElementById('numberDisplay').textContent = currentNumber;
+            document.getElementById('wordDisplay').textContent = numbers[currentNumber];
+            lettersCovered.clear();
+            hasCompletedTracing = false;
+            drawDottedText();
+            document.getElementById('progress').textContent = 'Trace the letters above!';
+        }
+        
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches ? e.touches[0] : e;
+            return {
+                x: touch.clientX - rect.left,
+                y: touch.clientY - rect.top
+            };
+        }
+        
+        function startDrawing(e) {
+            drawing = true;
+            const pos = getMousePos(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            e.preventDefault();
+        }
+        
+        function draw(e) {
+            if (!drawing) return;
+            
+            const pos = getMousePos(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.strokeStyle = '#764ba2';
+            ctx.lineWidth = 8;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+            
+            checkCoverage(pos.x, pos.y);
+            e.preventDefault();
+        }
+        
+        function stopDrawing() {
+            drawing = false;
+        }
+        
+        function checkCoverage(x, y) {
+            if (isSpeaking) return; // Don't register new letters while speaking
+            
+            const word = numbers[currentNumber];
+            const letterSpacing = 30;
+            const letterWidth = 50;
+            const totalWidth = (word.length * letterWidth) + ((word.length - 1) * letterSpacing);
+            const startX = (canvas.width - totalWidth) / 2;
+            const centerY = canvas.height / 2;
+            
+            for (let i = 0; i < word.length; i++) {
+                const letterX = startX + (i * (letterWidth + letterSpacing)) + letterWidth / 2;
+                
+                if (Math.abs(x - letterX) < letterWidth / 2 && 
+                    Math.abs(y - centerY) < 50) {
+                    
+                    if (!lettersCovered.has(i)) {
+                        lettersCovered.add(i);
+                        // Speak the individual letter
+                        isSpeaking = true;
+                        speak(word[i], () => {
+                            isSpeaking = false;
+                        });
+                    }
+                    
+                    if (lettersCovered.size >= word.length && !hasCompletedTracing) {
+                        hasCompletedTracing = true;
+                        // Wait for current letter to finish, then speak complete word
+                        isSpeaking = true;
+                        const checkAndSpeak = () => {
+                            if (!speechSynthesis.speaking) {
+                                setTimeout(() => {
+                                    showThumbsUp();
+                                    speak(word, () => {
+                                        isSpeaking = false;
+                                    });
+                                }, 500);
+                            } else {
+                                setTimeout(checkAndSpeak, 100);
+                            }
+                        };
+                        checkAndSpeak();
+                    }
+                    break;
+                }
+            }
+        }
+        
+        function showThumbsUp() {
+            const thumbsUp = document.createElement('div');
+            thumbsUp.className = 'thumbs-up';
+            thumbsUp.textContent = '👍';
+            document.querySelector('.canvas-container').appendChild(thumbsUp);
+            document.getElementById('progress').textContent = 'Great job! 🎉';
+            
+            setTimeout(() => {
+                thumbsUp.remove();
+            }, 2000);
+        }
+        
+        function clearCanvas() {
+            lettersCovered.clear();
+            hasCompletedTracing = false;
+            isSpeaking = false;
+            speechSynthesis.cancel(); // Stop any ongoing speech
+            drawDottedText();
+            document.getElementById('progress').textContent = 'Trace the letters above!';
+        }
+        
+        function nextNumber() {
+            if (currentNumber < 10) {
+                currentNumber++;
+                updateDisplay();
+            }
+        }
+        
+        function prevNumber() {
+            if (currentNumber > 1) {
+                currentNumber--;
+                updateDisplay();
+            }
+        }
+        
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        
+        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchend', stopDrawing);
+        
+        updateDisplay();
+    </script>
+</body>
+</html>
